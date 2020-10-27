@@ -102,6 +102,7 @@ function docker_build() {
   echo "Using cache repo: $cache_repo"
   
   echo "Copying cache dirs from the cache repo"
+  mkdir -p /cache
   id=$(docker create $cache_repo)
   docker cp $id:/usr/local/cargo/registry > /cache/registry
   docker cp $id:/usr/local/cargo/git > /cache/git
