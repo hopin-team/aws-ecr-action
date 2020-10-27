@@ -81,10 +81,34 @@ function docker_build() {
     docker_tag_args="$docker_tag_args -t $2/$INPUT_REPO:$tag"
   done
   
-  local cache_repo="$2/$INPUT_REPO:latest-build-cache"
-  echo "running:   docker pull $cache_repo || true"
-  docker pull $cache_repo || true
-  echo "running: build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH"
+  ref_cache="$GITHUB_REF-build-cache"
+  cache_tags=($ref-cache latest-build-cache)
+
+  for tag in "${cache_tags[@]}"
+  do
+    unset error
+    cache_repo="$2/$INPUT_REPO:$tag"
+    docker pull $cache_repo || error=true
+
+    if [ -z "$error" ]
+    then
+      export cache_tag=$tag
+      break
+    fi
+  done
+  
+  cache_repo=$2/$INPUT_REPO:$cache_tag
+  
+  echo "Using cache repo: $cache_repo"
+  
+  echo "Copying cache dirs from the cache repo"
+  id=$(docker create $cache_repo)
+  mkdir -p /cache/registry /cache/git /cache/target
+  docker cp $id:/usr/local/cargo/registry > /cache/registry
+  docker cp $id:/usr/local/cargo/git > /cache/git
+  docker cp $id:/app/target > /cache/target
+  docker rm -v $id
+  
   docker build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
   docker build --cache-from $cache_repo $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
   echo "== FINISHED DOCKERIZE"
