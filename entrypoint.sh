@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 function main() {
   sanitize "${INPUT_ACCESS_KEY_ID}" "access_key_id"
