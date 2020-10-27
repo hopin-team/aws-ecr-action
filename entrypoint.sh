@@ -125,7 +125,7 @@ function docker_build() {
   docker cp $id:/usr/local/cargo/registry .build-cache/registry
   docker cp $id:/usr/local/cargo/git .build-cache/git
   docker cp $id:/app/target .build-cache/target
-  chown -R $USER .build-cache
+  chown -R `whoami` .build-cache
   docker rm -v $id
   echo "== FINISHED DOCKERIZE"
 }
