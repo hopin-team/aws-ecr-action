@@ -112,6 +112,8 @@ function docker_build() {
   mkdir -p /cache/registry
   mkdir -p /cache/git
   mkdir -p /cache/target
+  
+  ls -l /cache
 
   docker build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
   docker build --cache-from $cache_repo $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
