@@ -103,12 +103,13 @@ function docker_build() {
   
   echo "Copying cache dirs from the cache repo"
   id=$(docker create $cache_repo)
-  mkdir -p /cache/registry /cache/git /cache/target
   docker cp $id:/usr/local/cargo/registry > /cache/registry
   docker cp $id:/usr/local/cargo/git > /cache/git
   docker cp $id:/app/target > /cache/target
   docker rm -v $id
   
+  mkdir -p /cache/registry /cache/git /cache/target
+
   docker build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
   docker build --cache-from $cache_repo $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
   echo "== FINISHED DOCKERIZE"
