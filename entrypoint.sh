@@ -81,40 +81,51 @@ function docker_build() {
     docker_tag_args="$docker_tag_args -t $2/$INPUT_REPO:$tag"
   done
   
-  ref_cache="$GITHUB_REF-build-cache"
-  cache_tags=($ref-cache latest-build-cache)
+#   ref_cache="$GITHUB_REF-build-cache"
+#   cache_tags=($ref-cache latest-build-cache)
+#
+#   for tag in "${cache_tags[@]}"
+#   do
+#     unset error
+#     cache_repo="$2/$INPUT_REPO:$tag"
+#     docker pull $cache_repo || error=true
 
-  for tag in "${cache_tags[@]}"
-  do
-    unset error
-    cache_repo="$2/$INPUT_REPO:$tag"
-    docker pull $cache_repo || error=true
-
-    if [ -z "$error" ]
-    then
-      export cache_tag=$tag
-      break
-    fi
-  done
+#     if [ -z "$error" ]
+#     then
+#       export cache_tag=$tag
+#       break
+#     fi
+#   done
   
-  cache_repo=$2/$INPUT_REPO:$cache_tag
+#   cache_repo=$2/$INPUT_REPO:$cache_tag
   
-  echo "Using cache repo: $cache_repo"
+#   echo "Using cache repo: $cache_repo"
+  
+#   echo "Copying cache dirs from the cache repo"
+#   mkdir -p .build-cache
+#   id=$(docker create $cache_repo)
+#   docker cp $id:/usr/local/cargo/registry .build-cache/registry
+#   docker cp $id:/usr/local/cargo/git .build-cache/git
+#   docker cp $id:/app/target .build-cache/target
+#   docker rm -v $id
+  
+#   mkdir -p .build-cache/registry
+#   mkdir -p .build-cache/git
+#   mkdir -p .build-cache/target
+  
+#  docker build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
+#   docker build --cache-from $cache_repo $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
+  docker build --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t cargo-builder $INPUT_PATH
+  docker build --cache-from cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
   
   echo "Copying cache dirs from the cache repo"
   mkdir -p .build-cache
-  id=$(docker create $cache_repo)
+  rm -fr .build-cache/*
+  id=$(docker create cargo-builder)
   docker cp $id:/usr/local/cargo/registry .build-cache/registry
   docker cp $id:/usr/local/cargo/git .build-cache/git
   docker cp $id:/app/target .build-cache/target
   docker rm -v $id
-  
-  mkdir -p .build-cache/registry
-  mkdir -p .build-cache/git
-  mkdir -p .build-cache/target
-  
-  docker build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
-  docker build --cache-from $cache_repo $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
   echo "== FINISHED DOCKERIZE"
 }
 
@@ -126,9 +137,9 @@ function docker_push_to_ecr() {
     docker push $2/$INPUT_REPO:$tag
     echo ::set-output name=image::$2/$INPUT_REPO:$tag
   done
-  ref_cache="$GITHUB_REF-build-cache"
-  docker push $2/$INPUT_REPO:latest-build-cache || true
-  docker push $2/$INPUT_REPO:$ref-cache || true
+#   ref_cache="$GITHUB_REF-build-cache"
+#   docker push $2/$INPUT_REPO:latest-build-cache || true
+#   docker push $2/$INPUT_REPO:$ref-cache || true
 
   echo "== FINISHED PUSH TO ECR"
 }
