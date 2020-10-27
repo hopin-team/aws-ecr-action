@@ -116,7 +116,7 @@ function docker_build() {
   ls -l tmp/build-cache
   du -hs tmp/build-cache/*
 
-  docker build --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
+  docker build --cache-from $cache_repo --target cargo-builder $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE -t $cache_repo $INPUT_PATH
   docker build --cache-from $cache_repo $INPUT_EXTRA_BUILD_ARGS -f $INPUT_DOCKERFILE $docker_tag_args $INPUT_PATH
   echo "== FINISHED DOCKERIZE"
 }
@@ -126,10 +126,13 @@ function docker_push_to_ecr() {
   local TAG=$1
   local DOCKER_TAGS=$(echo "$TAG" | tr "," "\n")
   for tag in $DOCKER_TAGS; do
-    docker push $2/$INPUT_REPO:latest-build-cache
     docker push $2/$INPUT_REPO:$tag
     echo ::set-output name=image::$2/$INPUT_REPO:$tag
   done
+  ref_cache="$GITHUB_REF-build-cache"
+  docker push $2/$INPUT_REPO:latest-build-cache || true
+  docker push $2/$INPUT_REPO:$ref-cache || true
+
   echo "== FINISHED PUSH TO ECR"
 }
 
